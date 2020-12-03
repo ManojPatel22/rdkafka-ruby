@@ -14,10 +14,16 @@ module Rdkafka
       # Start thread to poll client for delivery callbacks
       @polling_thread = Thread.new do
         loop do
-          Rdkafka::Bindings.rd_kafka_poll(@native_kafka, 250)
-          # Exit thread if closing and the poll queue is empty
-          if @closing && Rdkafka::Bindings.rd_kafka_outq_len(@native_kafka) == 0
-            break
+          begin
+            Rdkafka::Bindings.rd_kafka_poll(@native_kafka, 250)
+            # Exit thread if closing and the poll queue is empty
+            if @closing && Rdkafka::Bindings.rd_kafka_outq_len(@native_kafka) == 0
+              break
+            end
+          rescue => e
+            $stderr.puts "polling thread will exit due to an exception #{e.to_s}"
+            $stderr.puts e.backtrace
+            raise
           end
         end
       end
